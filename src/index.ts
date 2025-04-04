@@ -260,10 +260,9 @@ const classifyAndFetchEvidenceAI = async (
 
   if (Array.isArray(response) && response.length > 0 && 'content' in response[0]) {
     const content = (response[0] as AIMessage).content;
-    if (typeof content === "string") {
-      return content.trim(); // Return the AI-generated result
-    }
-    throw new Error("Unexpected content format from AI model");
+   
+      return content; // Return the AI-generated result
+    
   }
 
   throw new Error("Unexpected response format from AI model");
