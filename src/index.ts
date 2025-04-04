@@ -258,11 +258,8 @@ const classifyAndFetchEvidenceAI = async (
     { role: "user", content: `Product description: ${transactionDetails}` },
   ]);
 
-  if (Array.isArray(response) && response.length > 0 && 'content' in response[0]) {
-    const content = (response[0] as AIMessage).content;
-   
-      return content; // Return the AI-generated result
-    
+  if('content' in response) {
+    return response.content;  // Return the content of the AI response
   }
 
   throw new Error("Unexpected response format from AI model");
