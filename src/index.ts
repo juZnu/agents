@@ -10,45 +10,316 @@ import { ChatOpenAI } from "@langchain/openai";
 
 // Initialize the LLM (GPT model)
 const llm = new ChatOpenAI({
-  model: "gpt-4o",  // You can also choose other models like gpt-3.5-turbo
-  temperature: 0,   // Low temperature for more deterministic output
+  model: "gpt-4",  // Using gpt-4 as the model for AI interactions
+  temperature: 0,  // Low temperature for deterministic output
 });
+
+// Define the Evidence Guidelines (You can modify this with your actual guidelines)
+const Evidence_Guidelines = `
+
+Credit Not Processed   Digital:
+- cancellation_policy
+- refund_policy
+- cancellation_policy_disclosure
+- refund_policy_disclosure
+- cancellation_rebuttal
+- refund_refusal_explanation
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+
+Credit Not Processed   Offline:
+- cancellation_policy
+- refund_policy
+- cancellation_policy_disclosure
+- refund_policy_disclosure
+- cancellation_rebuttal
+- refund_refusal_explanation
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+
+Credit Not Processed Physical:
+- refund_policy
+- refund_policy_disclosure
+- refund_refusal_explanation
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+
+Fraudulent Physical:
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+- customer_signature
+- uncategorized_text
+- uncategorized_file
+- shipping_address
+- shipping_documentation
+- shipping_date
+- shipping_carrier
+- shipping_tracking_number
+- uncategorized_file
+- uncategorized_text
+
+Fraudulent  Digital:
+- customer_purchase_ip
+- customer_name
+- customer_email_address
+- access_activity_log
+- uncategorized_file
+- uncategorized_text
+
+Fraudulent Offline:
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+- customer_signature
+- uncategorized_text
+- uncategorized_file
+- service_date
+- service_documentation
+- uncategorized_text
+- uncategorized_file
+
+Fraudulent Physical.1:
+- product_description
+- uncategorized_file
+- customer_communication
+- refund_policy
+- refund_policy_disclosure
+- uncategorized_text
+- uncategorized_file
+
+Fraudulent Digital:
+- product_description
+- uncategorized_file
+- customer_communication
+- access_activity_log
+- refund_policy
+- refund_policy_disclosure
+- uncategorized_text
+- uncategorized_file
+
+Fraudulent Offline.1:
+- product_description
+- uncategorized_file
+- customer_communication
+- refund_policy
+- refund_policy_disclosure
+- uncategorized_text
+- uncategorized_file
+
+Duplicate Charge Physical:
+- duplicate_charge_id
+- duplicate_charge_explanation
+- duplicate_charge_documentation
+- shipping_documentation
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+
+Duplicate Charge Digital:
+- duplicate_charge_id
+- duplicate_charge_explanation
+- duplicate_charge_documentation
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+
+Duplicate Charge Offline:
+- duplicate_charge_id
+- duplicate_charge_explanation
+- duplicate_charge_documentation
+- service_documentation
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+
+Subscription canceled Physical:
+- cancellation_policy
+- cancellation_policy_disclosure
+- cancellation_rebuttal
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+
+Subscription canceled Digital:
+- cancellation_policy
+- cancellation_policy_disclosure
+- cancellation_rebuttal
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+
+Subscription canceled Offline:
+- cancellation_policy
+- cancellation_policy_disclosure
+- cancellation_rebuttal
+- service_date
+- service_documentation
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+
+Product not received Physical:
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+- customer_signature
+- uncategorized_text
+- uncategorized_file
+- shipping_address
+- shipping_documentation
+- shipping_date
+- shipping_carrier
+- shipping_tracking_number
+- uncategorized_file
+- uncategorized_text
+
+Product not received Digital:
+- customer_purchase_ip
+- customer_name
+- customer_email_address
+- access_activity_log
+- customer_communication
+- uncategorized_file
+- uncategorized_text
+
+Product not received Offline:
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+- customer_signature
+- uncategorized_text
+- uncategorized_file
+- service_date
+- service_documentation
+- uncategorized_text
+- uncategorized_file
+
+Unrecognized Physical:
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+- customer_signature
+- uncategorized_text
+- uncategorized_file
+- shipping_address
+- shipping_documentation
+- shipping_date
+- shipping_carrier
+- shipping_tracking_number
+- uncategorized_file
+- uncategorized_text
+
+Unrecognized Digital:
+- customer_purchase_ip
+- customer_name
+- customer_email_address
+- access_activity_log
+- uncategorized_file
+- uncategorized_text
+
+Unrecognized Offline:
+- customer_communication
+- uncategorized_text
+- uncategorized_file
+- customer_signature
+- uncategorized_text
+- uncategorized_file
+- service_date
+- service_documentation
+- uncategorized_file
+- uncategorized_text
+`
+
+
+// Function to classify the product and fetch the evidence using the AI model
+const classifyAndFetchEvidenceAI = async (
+  transactionDetails: string, chargebackReason: string, companyName: string, websiteUrl: string, 
+  amount: string, cardDigits: string, paymentMethod: string, disputerName: string
+) => {
+  // Constructing the prompt to classify and generate evidence requirements
+  const prompt = `Hi '${companyName}', you have a dispute from '${disputerName}' and the details are: 
+  'Amount': '${amount}' 
+  'Card digits': '${cardDigits}' 
+  'Chargeback reason': '${chargebackReason}' 
+  'Payment method': '${paymentMethod}' 
+  'Refund': (Refund decision will be made here based on policies)
+  
+  Add here the reason for the refusal and explanation about why it was rejected using the company's refund policies gathered from the website. 
+  Also, classify the product into one of these categories: 'physical_product', 'online_product', 'offline_service'. 
+  Based on the chargeback reason and product type, provide the appropriate evidence required: ${JSON.stringify(Evidence_Guidelines)}.`;
+
+  // Make the AI call
+  const response = await llm.invoke([
+    { role: "system", content: prompt },
+    { role: "user", content: `Product description: ${transactionDetails}` },
+  ]);
+
+  if (Array.isArray(response) && response.length > 0 && 'content' in response[0]) {
+    const content = (response[0] as AIMessage).content;
+    if (typeof content === "string") {
+      return content.trim(); // Return the AI-generated result
+    }
+    throw new Error("Unexpected content format from AI model");
+  }
+
+  throw new Error("Unexpected response format from AI model");
+};
+
+// Function to generate structured response using GPT
+const generateEvidenceResponse = async (disputeJson: any) => {
+  return await classifyAndFetchEvidenceAI(
+    disputeJson.description,
+    disputeJson.chargeback_reason,
+    disputeJson.company_name,
+    disputeJson.website_url,
+    disputeJson.amount,
+    disputeJson["Card Details last 4 digits"],
+    disputeJson.payment_method,
+    disputeJson.Disputer_name
+  );
+};
 
 // A simple tool node that doesn't use external tools (we're just processing the input and summarizing it)
 const toolNode = new ToolNode([]);
 
-// Function to call the model for summarizing text
+// Function to call the model for summarizing text and processing chargebacks
 const callModel = async (state: typeof MessagesAnnotation.State) => {
   const { messages } = state;
 
-  // Assuming the input message is the one that the agent should summarize
+  // Extract relevant details for AI processing
   const inputMessage = messages[messages.length - 1];
 
-  // Constructing the prompt for summarization
-  const prompt = `Summarize the following text: ${inputMessage.text}`;
+  // Call the AI model to classify and fetch evidence
+  const result = await generateEvidenceResponse({
+    description: inputMessage.content, // Assuming message contains the dispute details
+    chargeback_reason: (inputMessage as any).chargeback_reason, // Cast to 'any' or a custom type
+    company_name: (inputMessage as any).company_name,
+    website_url: (inputMessage as any).website_url,
+    amount: (inputMessage as any).amount,
+    "Card Details last 4 digits": (inputMessage as any)["Card Details last 4 digits"],
+    payment_method: (inputMessage as any).payment_method,
+    Disputer_name: (inputMessage as any).Disputer_name,
+  });
 
-  // Invoking the model with the summarization prompt
-  const result = await llm.invoke([{
-    role: "system",
-    content: prompt,
-  }]);
-
-  // Return the summarized result as a message
+  // Return the result of the classification and evidence generation
   return { messages: [result] };
 };
 
 // Function to decide if the workflow should continue
 const shouldContinue = (state: typeof MessagesAnnotation.State) => {
   const { messages } = state;
-
   const lastMessage = messages[messages.length - 1];
-  if (
-    lastMessage._getType() !== "ai" ||  // If the last message isn't an AI message
-    !(lastMessage as AIMessage).tool_calls?.length  // If no tools were called
-  ) {
-    return END;  // End the workflow
+
+  // Check if the last message is from AI and contains the tools call, otherwise end
+  if (lastMessage._getType() !== "ai" || !(lastMessage as AIMessage).tool_calls?.length) {
+    return END;  // End the workflow if no tool calls were made
   }
-  return "tools";  // Continue to the tools state (although in this case, we aren't using any external tools)
+
+  return "tools";  // Continue to the tools state (even though no external tools are used here)
 };
 
 /**
