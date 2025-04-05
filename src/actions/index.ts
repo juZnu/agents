@@ -19,7 +19,7 @@ export const generateDisputeResponse = async (transactionDetails: DisputeInfoTyp
   const response = await openai.invoke(messages);
 
   // Debug: Log the entire response object
-  console.log("OpenAI Response:", response);
+  console.log("OpenAI Response:", response.content);
 
   // Extract the generated response
   const generatedResponse = response.content;

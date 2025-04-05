@@ -10,4 +10,5 @@ export const DisputeInfoAnnotation = Annotation.Root({
   companyName: Annotation<string>,
   disputerName: Annotation<string>,
   websiteUrl: Annotation<string>,
+  disputeResolution: Annotation<string>
 });

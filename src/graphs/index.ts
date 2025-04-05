@@ -4,6 +4,6 @@ import { DisputeInfoAnnotation } from '../types/annotation';
 
 
 export const stripeWorkflow = new StateGraph(DisputeInfoAnnotation)
-  .addNode("agent", generateDisputeResolution)
-  .addEdge(START, "agent")
-  .addEdge("agent", END)
+  .addNode("disputeResponseCollector",generateDisputeResolution)
+  .addEdge(START, "disputeResponseCollector")
+  .addEdge("disputeResponseCollector", END)
