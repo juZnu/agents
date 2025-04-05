@@ -7,11 +7,13 @@ import {
 } from "@langchain/langgraph";
 import { AIMessage, BaseMessage } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
+import "dotenv/config";
+
 
 // Initialize the LLM (GPT model)
 const llm = new ChatOpenAI({
-  model: "gpt-4",  // Using gpt-4 as the model for AI interactions
-  temperature: 0,  // Low temperature for deterministic output
+  model: "gpt-4",  
+  temperature: 0,  
 });
 
 // Define the Evidence Guidelines (You can modify this with your actual guidelines)
@@ -233,11 +235,8 @@ Unrecognized Offline:
 - uncategorized_file
 - uncategorized_text
 `
-
-
-// Function to classify the product and fetch the evidence using the AI model
 const classifyAndFetchEvidenceAI = async (
-  transactionDetails: string, chargebackReason: string, companyName: string, websiteUrl: string, 
+  transactionDetails: string, chargebackReason: string, companyName: string, websiteUrl: string,
   amount: string, cardDigits: string, paymentMethod: string, disputerName: string
 ) => {
   // Constructing the prompt to classify and generate evidence requirements
@@ -252,14 +251,18 @@ const classifyAndFetchEvidenceAI = async (
   Also, classify the product into one of these categories: 'physical_product', 'online_product', 'offline_service'. 
   Based on the chargeback reason and product type, provide the appropriate evidence required: ${JSON.stringify(Evidence_Guidelines)}.`;
 
+  console.log("Calling LLM with the prompt:", prompt);
+
   // Make the AI call
   const response = await llm.invoke([
     { role: "system", content: prompt },
     { role: "user", content: `Product description: ${transactionDetails}` },
   ]);
 
-  if('content' in response) {
-    return response.content;  // Return the content of the AI response
+  console.log("LLM response:", response);
+
+  if ('content' in response) {
+    return response.content;
   }
 
   throw new Error("Unexpected response format from AI model");
@@ -267,6 +270,8 @@ const classifyAndFetchEvidenceAI = async (
 
 // Function to generate structured response using GPT
 const generateEvidenceResponse = async (disputeJson: any) => {
+  console.log("Generating evidence response for dispute:", disputeJson);
+  
   return await classifyAndFetchEvidenceAI(
     disputeJson.description,
     disputeJson.chargeback_reason,
@@ -289,10 +294,12 @@ const callModel = async (state: typeof MessagesAnnotation.State) => {
   // Extract relevant details for AI processing
   const inputMessage = messages[messages.length - 1];
 
+  console.log("Processing message:", inputMessage);
+
   // Call the AI model to classify and fetch evidence
   const result = await generateEvidenceResponse({
-    description: inputMessage.content, // Assuming message contains the dispute details
-    chargeback_reason: (inputMessage as any).chargeback_reason, // Cast to 'any' or a custom type
+    description: inputMessage.content,
+    chargeback_reason: (inputMessage as any).chargeback_reason,
     company_name: (inputMessage as any).company_name,
     website_url: (inputMessage as any).website_url,
     amount: (inputMessage as any).amount,
@@ -301,8 +308,10 @@ const callModel = async (state: typeof MessagesAnnotation.State) => {
     Disputer_name: (inputMessage as any).Disputer_name,
   });
 
+  console.log("Model result:", result);
+
   // Return the result of the classification and evidence generation
-  return { messages: [result] };
+  return { messages: [new AIMessage(typeof result === "string" ? result : JSON.stringify(result))] };
 };
 
 // Function to decide if the workflow should continue
@@ -310,12 +319,15 @@ const shouldContinue = (state: typeof MessagesAnnotation.State) => {
   const { messages } = state;
   const lastMessage = messages[messages.length - 1];
 
+  console.log("Checking if workflow should continue. Last message:", lastMessage);
+
   // Check if the last message is from AI and contains the tools call, otherwise end
   if (lastMessage._getType() !== "ai" || !(lastMessage as AIMessage).tool_calls?.length) {
+    console.log("No tool calls. Ending workflow.");
     return END;  // End the workflow if no tool calls were made
   }
 
-  return "tools";  // Continue to the tools state (even though no external tools are used here)
+  return "tools";
 };
 
 /**
@@ -327,6 +339,8 @@ const workflow = new StateGraph(MessagesAnnotation)
   .addNode("tools", toolNode)  // Add a node for tools (even though we're not using tools here)
   .addEdge("tools", "agent")  // Allow transition from tools back to agent
   .addConditionalEdges("agent", shouldContinue, ["tools", END]);  // Conditional edge to decide if the workflow should continue or end
+
+console.log("Compiled workflow:", workflow);
 
 // Compile the workflow
 export const graph = workflow.compile({
