@@ -1,22 +1,91 @@
 import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { DisputeInfoType } from "../types/types";
-import { generateDisputeResponse } from "../actions";
+import { generateCategoryType, generateDisputeResponseCustomer, generateDisputeResponsePaymentCompany, generateDisputeType } from "../actions";
+import { DisputeEvidenceInfoType, DisputeInfoType, ResponseInfoType } from "../types/types";
 import { Command } from "@langchain/langgraph";
+import { StripeDisputeAnnotation } from "../types/annotation";
+import { getEvidenceRequired } from "../utils";
+
 
 // Define the state machine and workflow
 const toolNode = new ToolNode([]);
 
-// Function to call the model for generating dispute response
-export const generateDisputeResolution = async (state: DisputeInfoType) => {
+// Define the initial node for classification (product category and dispute type)
+export const classifyDisputeAndProductNode = async (state: typeof StripeDisputeAnnotation.State) => {
+  // Call functions to classify dispute type and product category
+  console.log("State in classifyDisputeAndProductNode:", state);
+  const {paymentMethod} = state;
+  const disputeType = await generateDisputeType(state); 
+  const productCategory = await generateCategoryType(state); 
+  const evidenceRequired = getEvidenceRequired(
+    paymentMethod,
+    disputeType.toString(),
+    productCategory.toString()
+  );
+  return new Command({
+    update :{
+    disputeCategory : disputeType, 
+    productCategory : productCategory,
+    evidenceRequired: evidenceRequired,
+  }});
+};
 
-  // Call the function that generates the dispute response
-  const result = await generateDisputeResponse(state);
+export const disputeResponseCustomerNode = async (
+  state: typeof StripeDisputeAnnotation.State
+) => {
+  // Destructure state to extract the specific fields needed for the response generation
+  const { description, cardDetailsLast4, paymentMethod, amount, currency, chargebackReason, companyName, disputerName, websiteUrl, disputeCategory, productCategory, evidenceRequired } = state;
 
-  // Return an AIMessage with the generated response
+  // Call the function to generate the customer response using the destructured fields
+  const response = await generateDisputeResponseCustomer(
+    description, 
+    cardDetailsLast4, 
+    paymentMethod, 
+    amount, 
+    currency, 
+    chargebackReason, 
+    companyName, 
+    disputerName, 
+    websiteUrl, 
+    disputeCategory, 
+    productCategory, 
+    evidenceRequired
+  );
 
+  // Return the generated response for the customer
   return new Command({
     update: {
-      disputeResolution: result, 
+      messages: [...state.messages,response] 
+    }
+  });
+};
+
+
+export const disputeResponsePaymentCompanyNode = async (
+  state: typeof StripeDisputeAnnotation.State
+) => {
+  // Destructure state to extract the specific fields needed for the response generation
+  const { description, cardDetailsLast4, paymentMethod, amount, currency, chargebackReason, companyName, disputerName, websiteUrl, disputeCategory, productCategory, evidenceRequired } = state;
+
+  // Call the function to generate the payment company response using the destructured fields
+  const response = await generateDisputeResponsePaymentCompany(
+    description, 
+    cardDetailsLast4, 
+    paymentMethod, 
+    amount, 
+    currency, 
+    chargebackReason, 
+    companyName, 
+    disputerName, 
+    websiteUrl, 
+    disputeCategory, 
+    productCategory, 
+    evidenceRequired
+  );
+
+  // Return the generated response for the payment company
+  return new Command({
+    update: {
+      messages: [...state.messages,response] 
     }
   });
 };
