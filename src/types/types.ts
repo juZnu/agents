@@ -1,14 +1,57 @@
-export interface DisputeInfoType{
-  description: string;
-  cardDetailsLast4: string;
-  paymentMethod: string;
-  amount: string;
-  currency: string;
-  chargebackReason: string;
-  companyName: string;
-  disputerName: string;
-  websiteUrl: string;
+// Define common types for customer, charge, and business
+export type StripeCustomerType = {
+  id?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  connection_id?: string;
+  date_created?: string;
+  provider_id?: string | null;
+  user_id?: string;
+  workspace_id?: string | null;
 };
+
+export type StripeChargeType = {
+  id?: string;
+  amount?: number;
+  card_type?: string;
+  location?: string;
+  connection_id?: string;
+  customer?: string | null;
+  customer_id?: string;
+  date_created?: string;
+  cahrgeback_reason?: string;
+  last4?: string;
+  provider_id?: string | null;
+  user_id?: string;
+  workspace_id?: string | null;
+  evidences?: string[];
+};
+
+export type BusinessType = {
+  companyName?: string;
+  websiteUrl?: string;
+  industry?: string;
+};
+
+export interface DisputeInfoType {
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  chargeId: string;
+  chargeAmount: number;
+  chargeCardType: string;
+  chargeLocation: string;
+  chargeDateCreated: string;
+  cahregebackReason: string;
+  chargeLast4: string;
+  businessName: string;
+  businessWebsite: string;
+  businessIndustry: string;
+  evidence?: string[]; // List of evidence items
+}
 
 export interface DisputeEvidenceInfoType extends DisputeInfoType {
   disputeCategory: string;   // The category of the dispute (e.g., Fraudulent, Product Issue)
@@ -39,3 +82,5 @@ type DisputeType = {
 
 // Type for the full dispute requirements, which includes different card types and dispute types
 export type DisputeRequirements = Record<string, Record<string, DisputeType>>;
+
+

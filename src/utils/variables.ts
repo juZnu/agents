@@ -233,7 +233,7 @@ export const chargebackReasons = [
 
 export const productTypes = [
   "physical_product",
-  "digital_product",
+  "digital_product_or_service",
   "offline_service"
 ];
 
@@ -4050,3 +4050,5 @@ export const disputeRequirements : DisputeRequirements ={
     }
   }
 }
+
+

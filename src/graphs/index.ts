@@ -1,5 +1,5 @@
 import { StateGraph, START, END } from '@langchain/langgraph'
-import { classifyDisputeAndProductNode, disputeResponseCustomerNode, disputeResponsePaymentCompanyNode } from '../nodes';
+import { classifyDisputeAndProductNode, disputeResponseCustomerNode, disputeResponsePaymentCompanyNode} from '../nodes';
 import { StripeDisputeAnnotation } from '../types/annotation';
 
 
@@ -10,8 +10,8 @@ export const stripeWorkflow = new StateGraph(StripeDisputeAnnotation)
   .addNode("disputeResponsePaymentCompany", disputeResponsePaymentCompanyNode)
 
   // Add edges
-  .addEdge(START, "classifyDisputeAndProduct") // Connect the START to the first node
-  .addEdge("classifyDisputeAndProduct", "disputeResponseCustomer") // Link to customer response
-  .addEdge("classifyDisputeAndProduct", "disputeResponsePaymentCompany") // Link to payment company response
-  .addEdge("disputeResponseCustomer", END) // End after customer response
-  .addEdge("disputeResponsePaymentCompany", END); // End after payment company response
+  .addEdge(START, "classifyDisputeAndProduct") 
+  .addEdge("classifyDisputeAndProduct", "disputeResponseCustomer") 
+  .addEdge("classifyDisputeAndProduct", "disputeResponsePaymentCompany")
+  .addEdge("disputeResponseCustomer", END) 
+  .addEdge("disputeResponsePaymentCompany", END); 

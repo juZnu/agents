@@ -3,7 +3,7 @@ import { generateCategoryType, generateDisputeResponseCustomer, generateDisputeR
 import { DisputeEvidenceInfoType, DisputeInfoType, ResponseInfoType } from "../types/types";
 import { Command } from "@langchain/langgraph";
 import { StripeDisputeAnnotation } from "../types/annotation";
-import { getEvidenceRequired } from "../utils";
+import { getDisputeDetails, getEvidenceRequired, sleep } from "../utils";
 
 
 // Define the state machine and workflow
@@ -12,43 +12,46 @@ const toolNode = new ToolNode([]);
 // Define the initial node for classification (product category and dispute type)
 export const classifyDisputeAndProductNode = async (state: typeof StripeDisputeAnnotation.State) => {
   // Call functions to classify dispute type and product category
-  console.log("State in classifyDisputeAndProductNode:", state);
-  const {paymentMethod} = state;
-  const disputeType = await generateDisputeType(state); 
-  const productCategory = await generateCategoryType(state); 
+  const {customer, business, charge} = state;
+
+  const disputeDetails: DisputeInfoType = getDisputeDetails(customer,business,charge); 
+  
+  let disputeType : string = charge.cahrgeback_reason?.toString() || "";
+
+  if( !charge.cahrgeback_reason){
+    disputeType = await generateDisputeType(disputeDetails); 
+  }
+  const productCategory = await generateCategoryType(disputeDetails); 
+  
   const evidenceRequired = getEvidenceRequired(
-    paymentMethod,
-    disputeType.toString(),
+    charge.card_type?.toString() || "",
+    charge.cahrgeback_reason?.toString() || "",
     productCategory.toString()
   );
+
+  await sleep(2000); // Simulate some processing time
+
   return new Command({
     update :{
-    disputeCategory : disputeType, 
     productCategory : productCategory,
     evidenceRequired: evidenceRequired,
   }});
 };
 
+
 export const disputeResponseCustomerNode = async (
   state: typeof StripeDisputeAnnotation.State
 ) => {
   // Destructure state to extract the specific fields needed for the response generation
-  const { description, cardDetailsLast4, paymentMethod, amount, currency, chargebackReason, companyName, disputerName, websiteUrl, disputeCategory, productCategory, evidenceRequired } = state;
+  const { customer, business, charge, productCategory, evidenceRequired } = state;
 
+  const disputeDetails: DisputeInfoType = getDisputeDetails(customer,business,charge); 
+  
   // Call the function to generate the customer response using the destructured fields
   const response = await generateDisputeResponseCustomer(
-    description, 
-    cardDetailsLast4, 
-    paymentMethod, 
-    amount, 
-    currency, 
-    chargebackReason, 
-    companyName, 
-    disputerName, 
-    websiteUrl, 
-    disputeCategory, 
-    productCategory, 
-    evidenceRequired
+    disputeDetails,
+    evidenceRequired,
+    productCategory,
   );
 
   // Return the generated response for the customer
@@ -64,24 +67,17 @@ export const disputeResponsePaymentCompanyNode = async (
   state: typeof StripeDisputeAnnotation.State
 ) => {
   // Destructure state to extract the specific fields needed for the response generation
-  const { description, cardDetailsLast4, paymentMethod, amount, currency, chargebackReason, companyName, disputerName, websiteUrl, disputeCategory, productCategory, evidenceRequired } = state;
+  const { customer, business, charge, productCategory, evidenceRequired} = state;
 
+  const disputeDetails: DisputeInfoType = getDisputeDetails(customer,business,charge); 
+
+  
   // Call the function to generate the payment company response using the destructured fields
   const response = await generateDisputeResponsePaymentCompany(
-    description, 
-    cardDetailsLast4, 
-    paymentMethod, 
-    amount, 
-    currency, 
-    chargebackReason, 
-    companyName, 
-    disputerName, 
-    websiteUrl, 
-    disputeCategory, 
-    productCategory, 
-    evidenceRequired
+    disputeDetails,
+    evidenceRequired,
+    productCategory,
   );
-
   // Return the generated response for the payment company
   return new Command({
     update: {

@@ -1,20 +1,13 @@
 import { Annotation, MessagesAnnotation } from '@langchain/langgraph';
+import { BusinessType, StripeChargeType, StripeCustomerType } from './types';
 
 
 export const StripeDisputeAnnotation = Annotation.Root({
   ...MessagesAnnotation.spec,
-  description: Annotation<string>(),
-  cardDetailsLast4: Annotation<string>(),
-  paymentMethod: Annotation<string>(),
-  amount: Annotation<string>(),
-  currency: Annotation<string>(),
-  chargebackReason: Annotation<string>(),
-  companyName: Annotation<string>(),
-  disputerName: Annotation<string>(),
-  websiteUrl: Annotation<string>(),
-  disputeCategory: Annotation<string>(),
+  customer: Annotation<StripeCustomerType>(),
+  charge: Annotation<StripeChargeType>(),
+  business: Annotation<BusinessType>(),
   productCategory: Annotation<string>(),
   evidenceRequired: Annotation<string>(),
-  responsePaymentCompanyOutput: Annotation<string>(),
-  responseCustomerOutput: Annotation<string>(),
 })
+

@@ -8,13 +8,16 @@ import {
   BusinessResponsePrompt, 
   requiredEvidencePrompt, 
   paymentCompanyResponsePrompt } from "../utils/prompts";
+import { sleep } from "../utils";
+import { getTextEmbedding } from "../models/embeddings";
+import { storeBusinessResponse } from "../models/vector";
 
-export const generateDisputeType = async (transactionDetails: DisputeInfoType) => {
+export const generateDisputeType = async (transactionDetails: DisputeInfoType) : Promise<string> => {
   // Define the system and user prompts
   const systemMessages = [
     { role: "system", content: classifyDisputePrompt }
   ];
-
+  
   const userMessage = [{ role: "user", content: disputeDetailsPrompt(transactionDetails) }];
 
   // Prepare the complete set of messages
@@ -22,17 +25,17 @@ export const generateDisputeType = async (transactionDetails: DisputeInfoType) =
 
   // Use the invoke method to call the model
   const response = await openai.invoke(messages);
+  await sleep(10000); // Adding a delay of 1 second between requests
+
 
   // Debug: Log the entire response object
-  console.log("OpenAI Response1:", response.content);
 
   // Extract the generated response
-  const generatedResponse = response.content;
+  const generatedResponse : string = response?.content.toLocaleString();
 
   if (!generatedResponse) {
     throw new Error("Failed to generate response from OpenAI.");
   }
-
   return generatedResponse; // Return the generated response
 };
 
@@ -41,17 +44,19 @@ export const generateCategoryType = async (transactionDetails: DisputeInfoType) 
   const systemMessages = [
     { role: "system", content: classifyProductPrompt }
   ];
-
+  
   const userMessage = [{ role: "user", content: disputeDetailsPrompt(transactionDetails) }];
 
   // Prepare the complete set of messages
   const messages = [...systemMessages, ...userMessage];
 
   // Use the invoke method to call the model
+
   const response = await openai.invoke(messages);
+  await sleep(10000); // Adding a delay of 1 second between requests
+
 
   // Debug: Log the entire response object
-  console.log("OpenAI Response2:", response.content);
 
   // Extract the generated response
   const generatedResponse = response.content;
@@ -60,42 +65,53 @@ export const generateCategoryType = async (transactionDetails: DisputeInfoType) 
     throw new Error("Failed to generate response from OpenAI.");
   }
 
-  return generatedResponse; // Return the generated response
+  return generatedResponse; 
 };
 
 export const generateDisputeResponseCustomer = async (
-  description: string,
-  cardDetailsLast4: string,
-  paymentMethod: string,
-  amount: string,
-  currency: string,
-  chargebackReason: string,
-  companyName: string,
-  disputerName: string,
-  websiteUrl: string,
-  disputeCategory: string,
+  disputeDetails: DisputeInfoType,
   productCategory: string,
-  evidenceRequired: string
+  evidenceRequired: string,
 ) => {
   // Define the system and user prompts
   const systemMessages = [
-    { role: "system", content: BusinessResponsePrompt },
-    { role: "system", content: requiredEvidencePrompt(cardDetailsLast4, disputeCategory, productCategory, evidenceRequired) }
+    { role: "system", content: `${BusinessResponsePrompt}\n\n${requiredEvidencePrompt(disputeDetails.chargeCardType, disputeDetails.cahregebackReason, productCategory, evidenceRequired)}` },
+
+
+    // { role: "system", content: BusinessResponsePrompt },
+    // { role: "system", content: requiredEvidencePrompt(cardDetailsLast4, disputeCategory, productCategory, evidenceRequired) }
   ];
 
-  const userMessage = [{ role: "user", content: disputeDetailsPrompt({ description, cardDetailsLast4, paymentMethod, amount, currency, chargebackReason, companyName, disputerName, websiteUrl }) }];
+  const userMessage = [{ role: "user", content: disputeDetailsPrompt(disputeDetails,true) }];
 
+  console.log("User Message:", userMessage);
   // Prepare the complete set of messages
   const messages = [...systemMessages, ...userMessage];
+
+  await sleep(10000); // Adding a delay of 1 second between requests
 
   // Use the invoke method to call the model
   const response = await openai.invoke(messages);
 
   // Debug: Log the entire response object
-  console.log("OpenAI Response Customer:", response.content);
 
   // Extract the generated response
   const generatedResponse = response.content;
+
+  const businessResponseEmbedding = await getTextEmbedding(generatedResponse.toLocaleString());
+
+  storeBusinessResponse(
+    "business_responses",
+    generatedResponse.toLocaleString(),
+    businessResponseEmbedding,
+    {
+      disputeType: disputeDetails.cahregebackReason,
+      paymentProvider: disputeDetails.chargeCardType,
+      businessName: disputeDetails.businessName,
+    }
+  )
+
+  console.log("Generated Business Response:", generatedResponse);
 
   if (!generatedResponse) {
     throw new Error("Failed to generate response from OpenAI.");
@@ -104,41 +120,52 @@ export const generateDisputeResponseCustomer = async (
   return generatedResponse; // Return the generated response
 };
 
-// Updated generateDisputeResponsePaymentCompany function
 export const generateDisputeResponsePaymentCompany = async (
-  description: string,
-  cardDetailsLast4: string,
-  paymentMethod: string,
-  amount: string,
-  currency: string,
-  chargebackReason: string,
-  companyName: string,
-  disputerName: string,
-  websiteUrl: string,
-  disputeCategory: string,
+  disputeDetails: DisputeInfoType,
   productCategory: string,
-  evidenceRequired: string
+  evidenceRequired: string,
 ) => {
   // Define the system and user prompts for payment company response
   const systemMessages = [
-    { role: "system", content: paymentCompanyResponsePrompt },
-    { role: "system", content: requiredEvidencePrompt(cardDetailsLast4, disputeCategory, productCategory, evidenceRequired) }
+    { role: "system", content: `${paymentCompanyResponsePrompt}\n\n${requiredEvidencePrompt(disputeDetails.chargeCardType, disputeDetails.cahregebackReason, productCategory, evidenceRequired)}` },
+
   ];
 
-  const userMessage = [{ role: "user", content: disputeDetailsPrompt({ description, cardDetailsLast4, paymentMethod, amount, currency, chargebackReason, companyName, disputerName, websiteUrl }) }];
+  // const systemMessages = [
+  //   { role: "system", content: paymentCompanyResponsePrompt },
+  //   { role: "system", content: requiredEvidencePrompt(cardDetailsLast4, disputeCategory, productCategory, evidenceRequired) }
+  // ];
+
+  const userMessage = [{ role: "user", content: disputeDetailsPrompt(disputeDetails,true) }];
 
   // Prepare the complete set of messages
   const messages = [...systemMessages, ...userMessage];
 
+  await sleep(10000); // Adding a delay of 1 second between requests
+  
   // Use the invoke method to call the model
   const response = await openai.invoke(messages);
 
   // Debug: Log the entire response object
-  console.log("OpenAI Response Payment:", response.content);
 
   // Extract the generated response
   const generatedResponse = response.content;
+  console.log("Generated Payment Response:", generatedResponse);
 
+
+
+  const paymentResponseEmbedding = await getTextEmbedding(generatedResponse.toLocaleString());
+
+  storeBusinessResponse(
+    "payment_responses",
+    generatedResponse.toLocaleString(),
+    paymentResponseEmbedding,
+    {
+      disputeType: disputeDetails.cahregebackReason,
+      paymentProvider: disputeDetails.chargeCardType,
+      businessName: disputeDetails.businessName,
+    }
+  )
   if (!generatedResponse) {
     throw new Error("Failed to generate response from OpenAI.");
   }

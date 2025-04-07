@@ -38,6 +38,30 @@ Respond with:
 Only use the categories provided. Do not create new ones. Base your response strictly on the transaction and product details.
 `;
 
+export const disputeDetailsPrompt = (disputeDetails: DisputeInfoType, isEvidence: boolean = false) => {
+  return `
+Dispute Details:
+  - Customer Name: ${disputeDetails.customerName}
+  - Customer Email: ${disputeDetails.customerEmail}
+  - Customer Phone: ${disputeDetails.customerPhone}
+  - Charge Amount: ${disputeDetails.chargeAmount}
+  - Charge Card Type: ${disputeDetails.chargeCardType}
+  - Charge Location: ${disputeDetails.chargeLocation}
+  - Charge Date: ${disputeDetails.chargeDateCreated}
+  - Card Last 4 Digits: ${disputeDetails.chargeLast4}
+  - Business Name: ${disputeDetails.businessName}
+  - Business Website: ${disputeDetails.businessWebsite}
+  - Business Industry: ${disputeDetails.businessIndustry}
+
+  ${isEvidence ? `
+  ### Evidence:
+  ${disputeDetails.evidence && disputeDetails.evidence.length > 0 
+    ? disputeDetails.evidence.map((item) => `- ${item}`).join('\n') 
+    : "No evidence provided."}` 
+  : ''}
+`;
+};
+
 export const requiredEvidencePrompt = (
   cardType: string,
   disputeCategory: string,
@@ -57,80 +81,57 @@ export const requiredEvidencePrompt = (
           ${evidences}`;
 };
 
-export const disputeDetailsPrompt = (disputeDetails: DisputeInfoType) => {
-  return `Dispute Details:
-    - Description: ${disputeDetails.description}
-    - Card Details Last 4 Digits: ${disputeDetails.cardDetailsLast4}
-    - Payment Method: ${disputeDetails.paymentMethod}
-    - Amount: ${disputeDetails.amount}
-    - Currency: ${disputeDetails.currency}
-    - Chargeback Reason: ${disputeDetails.chargebackReason}
-    - Company Name: ${disputeDetails.companyName}
-    - Disputer Name: ${disputeDetails.disputerName}
-    - Website URL: ${disputeDetails.websiteUrl}`;
-};
-
 export const BusinessResponsePrompt = `
 You are a customer service agent assisting with chargeback dispute investigations. Your objective is to draft a response that includes the following:
+and also please try to include dispute reason and product type in the response. Acknowledge the dispute and provide a brief overview of the situation.
 Hi (business_name),
-1. State that the dispute is from (disputer_name).
-2. Summarize the key dispute details:
-   - Amount: (amount)
-   - Card Digits: (card_digits)
-   - Chargeback Reason: (chargeback_reason)
-   - Payment Method: (payment_method)
-   - Any other relevant information available.
 
-3. Present the current state of information:
-   ✅ **Available Information:**
-   - List all fields and values that have been provided.
+This is regarding the dispute raised by (disputer_name). Below are the key details of the dispute:
 
-   ❌ **Missing or Incomplete Information:**
-   - List all fields that are missing or unclear.
+- Name: (disputer_name)
+- Email: (disputer_email)
+- Amount: (amount)
+- Card Digits: (card_digits)
+- Payment Method: (payment_method)
 
-4. Recommend what additional evidence or documentation is needed to proceed with the dispute. This may include:
-   - **Refund Policy:** Attach a copy of the refund policy, e.g., a screenshot, PDF, or text from the terms and conditions.
-   - **Delivery Proof:** Include tracking information, receipts, or proof of delivery.
-   - **Communication Logs:** Provide any emails, messages, or written communication between the business and the customer prior to the dispute.
-   - **Other Relevant Evidence:** This could include screenshots, customer feedback, or any other documentation that supports the dispute, such as a refund refusal explanation, policy disclosures, or cancellation rebuttal.
+Based on the dispute details provided, here is the evidence we have and still require:
 
-5. Specify the required documentation that needs to be submitted for the chargeback dispute.
+Available Evidence:
+We have the following evidence for this case:
+list all the evidence that are available based on the evidence provided by the user and compare with the evidence required in a bullet point format
 
-Ensure the response is clear, factual, and professional, only using the information provided without any assumptions or fabricated data.
+Additional Evidences:
+To move forward, we need the following documents or information from your side:
+by checking all evidences that are necessary for this dispute list all the evidence that are needed based on the evidence provided by the user and compare with the evidence required in a bullet point format dont explain in details just list the evidences in a crisp format 
+
+We suggest this additional documents listed above will help to assist in resolving the dispute. Should you have any questions, feel free to reach out.
+
+Thank you for your cooperation.
+
+Best regards,  
+Safe Service Team
 `;
 
-// Payment Company Response Email Template
 export const paymentCompanyResponsePrompt = `
-You are a customer service agent communicating with a payment company regarding a chargeback dispute.
-Your goal is to create an email response that includes the following details:
+You are a customer service agent handling chargeback disputes. Your objective is to draft a response to the payment company, providing the available evidence for the dispute and asking if any additional evidence is needed.
 
-1. Clearly state the dispute is from (disputer_name).
-2. Provide the key dispute details:
-   - Amount: (amount)
-   - Card Digits: (card_digits)
-   - Chargeback Reason: (chargeback_reason)
-   - Payment Method: (payment_method)
-   - etc., whatever is available.
+Hi (payment_method),
 
-3. Present the current state of information:
-   ✅ **Available Information:**
-   - List all fields and values that have been provided.
+This is regarding the dispute raised by (disputer_name) against (business_name). Below are the key details of the dispute:
 
-   ❌ **Missing or Incomplete Information:**
-   - List all fields that are missing or unclear.
+Name : (disputer_name)
+Email : (disputer_email)
+Amount : (amount)
+Card Digits : (card_digits)
+Payment Method: (payment_method)
 
-4. Mention that the following evidence is available to resolve the dispute:
-   - **Evidence Available for This Case:**
-     (evidences)
-   
-5. Politely request additional information if necessary:
-   - **Additional Information Needed:**
-     - If any further information or documentation is required, we are happy to provide it.
+Based on the dispute details, here is the evidence we have:
+- (list all the evidence that are available based on the evidence provided by the user)
 
-6. Close the message politely, thanking the payment company for their attention and cooperation.
+Please let us know if any additional evidence is required, and we will promptly provide it.
 
-Format your response like a formal email. Be clear, professional, and helpful, ensuring that the payment company is aware of the status and next steps.
+Thank you for your cooperation.
 
-Only use the information provided. Do not assume or fabricate any data.
+Best regards,  
+Safe Service Team
 `;
-
