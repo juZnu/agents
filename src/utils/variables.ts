@@ -227,14 +227,13 @@ export const chargebackReasons = [
   "general",
   "product_not_received",
   "product_unacceptable",
-  "subscription_canceled",
-  "unrecognized"
+  "subscription_canceled"
 ];
 
 export const productTypes = [
-  "physical_product",
-  "digital_product_or_service",
-  "offline_service"
+  ["physical_product", "Physical products are tangible goods that were either purchased in a store or shipped to the recipient, so evidence often proves the customer is in possession of the item."],
+  ["digital_product_or_service","Digital products or services are often virtual in nature and don’t have trackable shipping data, so focus on evidence of usage, login, or download."],
+  ["offline_service","Offline services include purchases that are made in advance, such as event tickets and reservations, where evidence of a cancellation policy can be material."]
 ];
 
 export const disputeRequirements : DisputeRequirements ={

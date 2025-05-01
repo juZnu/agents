@@ -12,7 +12,6 @@ export const openai = new ChatOpenAI({
   maxRetries: 10
 });
 
-
 // export const openai = new ChatAnthropic({
 //   model: "Claude 3 Opus", // Or claude-3-opus, etc.
 //   temperature: 0,

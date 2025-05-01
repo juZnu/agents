@@ -4,10 +4,11 @@ import { disputeRequirements } from "./variables"; // Assuming disputeRequiremen
 export const getEvidenceRequired = (cardType: string, disputeType: string, categoryType: string): string => {
 
     // Extract the evidence list for the matched category
-    const evidenceList = disputeRequirements[cardType.trim()][disputeType.trim()]['evidence'][categoryType.trim()];
 
+    const evidenceList = disputeRequirements[cardType.trim()][disputeType.trim()]['evidence'][categoryType.trim()];
+    const evidences = evidenceList.map(item => ` - ${item[0]}`).join('\n') 
     // Return all the first items from the evidence list
-    return evidenceList.map(item => item[0]).join('\n') || ""; 
+    return evidences|| ""; 
 };
 
 
@@ -18,23 +19,69 @@ export function sleep(ms:number) {
 
 export const getDisputeDetails = (customer: StripeCustomerType, business: BusinessType, charge: StripeChargeType): DisputeInfoType => {
   return {
-    customerId: customer.id || "",
+    // Customer Information
     customerName: customer.name || "",
     customerEmail: customer.email || "",
     customerPhone: customer.phone || "",
-    chargeId: charge.id || "",
-    
+    customerAddress: customer.address || "", // Using customer address from StripeCustomerType
+
+    // Charge Information
     chargeAmount: charge.amount || 0,
     chargeCardType: charge.card_type || "",
     chargeLocation: charge.location || "",
     chargeDateCreated: charge.date_created || "",
     chargeLast4: charge.last4 || "",
-    cahregebackReason: charge.cahrgeback_reason || "",
-    
+
+
+    // Business Information
     businessName: business.companyName || "",
     businessWebsite: business.websiteUrl || "",
-    businessIndustry: business.industry || "",
-
-    evidence: charge.evidences || [],
   };
 };
+
+export async function generatePDF(content: string, fileName: string): Promise<string> {
+  const url = `https://chargebackdoc.sreenivaspagadala1999.workers.dev/generate-pdf/${fileName}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ "content" : wrapMultilineText(content, 70) }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate PDF. Status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.file_url; // correctly returning file_url
+}
+
+
+export function wrapMultilineText(text: string, maxLength: number): string {
+  const wrappedLines: string[] = [];
+
+  // Split by existing newlines first
+  const lines = text.split('\n');
+
+  for (const line of lines) {
+    const words = line.split(' ');
+    let currentLine = '';
+
+    for (const word of words) {
+      if ((currentLine + word).length > maxLength) {
+        wrappedLines.push(currentLine.trim());
+        currentLine = word + ' ';
+      } else {
+        currentLine += word + ' ';
+      }
+    }
+
+    if (currentLine.trim()) {
+      wrappedLines.push(currentLine.trim());
+    }
+  }
+
+  return wrappedLines.join('\n');
+}

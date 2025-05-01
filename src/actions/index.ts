@@ -1,5 +1,6 @@
 
 import { DisputeInfoType } from "../types/types";
+
 import { openai } from "../models";
 import {  
   classifyDisputePrompt, 
@@ -7,171 +8,135 @@ import {
   disputeDetailsPrompt, 
   BusinessResponsePrompt, 
   requiredEvidencePrompt, 
-  paymentCompanyResponsePrompt } from "../utils/prompts";
-import { sleep } from "../utils";
-import { getTextEmbedding } from "../models/embeddings";
-import { storeBusinessResponse } from "../models/vector";
+  paymentCompanyResponsePrompt, 
+  getRequiredEvidencesPrompt,
+  disputeDetailsPromptEnhanced} from "../utils/prompts";
 
-export const generateDisputeType = async (transactionDetails: DisputeInfoType) : Promise<string> => {
-  // Define the system and user prompts
-  const systemMessages = [
-    { role: "system", content: classifyDisputePrompt }
-  ];
+import { performTavilySearch } from "../models/Tavily";
+
+export const generateDisputeType = async (transactionDetails: DisputeInfoType, cardType: string) => {
   
+  const QUERY = 'I want all dispute categories with their description';
+  // Base domain URL
+  const BASE_URL = 'https://docs.stripe.com/disputes/reason-codes-defense-requirements';
+  // Conditionally add the card network if cardType is provided
+  const DOMAINS: string[] = cardType ? [`${BASE_URL}?card-network=${cardType}`] : [BASE_URL];
+
+  const MAX_RESULTS = 1;
+
+  const tavilyResult = await performTavilySearch({
+    query: QUERY,
+    domains: DOMAINS,
+    max_results: MAX_RESULTS
+  });
+
+  const disputeContent = `${tavilyResult.results[0].content}\n\n${tavilyResult.results[0].rawContent}`;
+
+  const systemMessages = [
+    { role: "system", content: `${classifyDisputePrompt}\n\n use the below content for guidance to categorize the dispute \n${disputeContent}` }
+  ];
   const userMessage = [{ role: "user", content: disputeDetailsPrompt(transactionDetails) }];
 
-  // Prepare the complete set of messages
   const messages = [...systemMessages, ...userMessage];
 
-  // Use the invoke method to call the model
   const response = await openai.invoke(messages);
-  await sleep(10000); // Adding a delay of 1 second between requests
+  console.log("Response from OpenAI 1:", response.content);
 
-
-  // Debug: Log the entire response object
-
-  // Extract the generated response
-  const generatedResponse : string = response?.content.toLocaleString();
-
-  if (!generatedResponse) {
-    throw new Error("Failed to generate response from OpenAI.");
-  }
-  return generatedResponse; // Return the generated response
+  return response; 
 };
 
+
 export const generateCategoryType = async (transactionDetails: DisputeInfoType) => {
-  // Define the system and user prompts
+
   const systemMessages = [
     { role: "system", content: classifyProductPrompt }
   ];
-  
+
   const userMessage = [{ role: "user", content: disputeDetailsPrompt(transactionDetails) }];
 
-  // Prepare the complete set of messages
   const messages = [...systemMessages, ...userMessage];
-
-  // Use the invoke method to call the model
 
   const response = await openai.invoke(messages);
-  await sleep(10000); // Adding a delay of 1 second between requests
 
-
-  // Debug: Log the entire response object
-
-  // Extract the generated response
-  const generatedResponse = response.content;
-
-  if (!generatedResponse) {
-    throw new Error("Failed to generate response from OpenAI.");
-  }
-
-  return generatedResponse; 
-};
-
-export const generateDisputeResponseCustomer = async (
-  disputeDetails: DisputeInfoType,
-  productCategory: string,
-  evidenceRequired: string,
-) => {
-  // Define the system and user prompts
-  const systemMessages = [
-    { role: "system", content: `${BusinessResponsePrompt}\n\n${requiredEvidencePrompt(disputeDetails.chargeCardType, disputeDetails.cahregebackReason, productCategory, evidenceRequired)}` },
-
-
-    // { role: "system", content: BusinessResponsePrompt },
-    // { role: "system", content: requiredEvidencePrompt(cardDetailsLast4, disputeCategory, productCategory, evidenceRequired) }
-  ];
-
-  const userMessage = [{ role: "user", content: disputeDetailsPrompt(disputeDetails,true) }];
-
-  console.log("User Message:", userMessage);
-  // Prepare the complete set of messages
-  const messages = [...systemMessages, ...userMessage];
-
-  await sleep(10000); // Adding a delay of 1 second between requests
-
-  // Use the invoke method to call the model
-  const response = await openai.invoke(messages);
-
-  // Debug: Log the entire response object
-
-  // Extract the generated response
-  const generatedResponse = response.content;
-
-  const businessResponseEmbedding = await getTextEmbedding(generatedResponse.toLocaleString());
-
-  storeBusinessResponse(
-    "business_responses",
-    generatedResponse.toLocaleString(),
-    businessResponseEmbedding,
-    {
-      disputeType: disputeDetails.cahregebackReason,
-      paymentProvider: disputeDetails.chargeCardType,
-      businessName: disputeDetails.businessName,
-    }
-  )
-
-  console.log("Generated Business Response:", generatedResponse);
-
-  if (!generatedResponse) {
-    throw new Error("Failed to generate response from OpenAI.");
-  }
-
-  return generatedResponse; // Return the generated response
-};
-
-export const generateDisputeResponsePaymentCompany = async (
-  disputeDetails: DisputeInfoType,
-  productCategory: string,
-  evidenceRequired: string,
-) => {
-  // Define the system and user prompts for payment company response
-  const systemMessages = [
-    { role: "system", content: `${paymentCompanyResponsePrompt}\n\n${requiredEvidencePrompt(disputeDetails.chargeCardType, disputeDetails.cahregebackReason, productCategory, evidenceRequired)}` },
-
-  ];
-
-  // const systemMessages = [
-  //   { role: "system", content: paymentCompanyResponsePrompt },
-  //   { role: "system", content: requiredEvidencePrompt(cardDetailsLast4, disputeCategory, productCategory, evidenceRequired) }
-  // ];
-
-  const userMessage = [{ role: "user", content: disputeDetailsPrompt(disputeDetails,true) }];
-
-  // Prepare the complete set of messages
-  const messages = [...systemMessages, ...userMessage];
-
-  await sleep(10000); // Adding a delay of 1 second between requests
+  console.log("Response from OpenAI 2:", response.content);
   
-  // Use the invoke method to call the model
-  const response = await openai.invoke(messages);
-
-  // Debug: Log the entire response object
-
-  // Extract the generated response
-  const generatedResponse = response.content;
-  console.log("Generated Payment Response:", generatedResponse);
-
-
-
-  const paymentResponseEmbedding = await getTextEmbedding(generatedResponse.toLocaleString());
-
-  storeBusinessResponse(
-    "payment_responses",
-    generatedResponse.toLocaleString(),
-    paymentResponseEmbedding,
-    {
-      disputeType: disputeDetails.cahregebackReason,
-      paymentProvider: disputeDetails.chargeCardType,
-      businessName: disputeDetails.businessName,
-    }
-  )
-  if (!generatedResponse) {
-    throw new Error("Failed to generate response from OpenAI.");
-  }
-
-  return generatedResponse; // Return the generated response
+  return response; 
 };
 
 
+export const generateEvidences = async (transactionDetails: DisputeInfoType, cardType: string, disputeType: string, productType: string) => {
 
+  const normalizedProductType = productType.toLowerCase().replace(/ /g, "_");
+  const normalizedDisputeType = disputeType.toLowerCase().replace(/ /g, "_");
+  const normalizedCardType = cardType.toLowerCase().replace(/ /g, "_");
+
+  const BASE_URL = 'https://docs.stripe.com/disputes/categories';
+  const dynamicURL = `${BASE_URL}?dispute-category=${normalizedDisputeType}&card-network=${normalizedCardType}&evidence-for=${normalizedProductType}`;
+
+  const QUERY = `
+  Provide a list of the required evidence for this type of dispute
+  Product Type: ${productType}
+  Card Type: ${cardType}
+  Reason for Dispute: ${disputeType}
+  `;
+
+
+  const DOMAINS: string[] = [dynamicURL];
+
+  const MAX_RESULTS = 4;
+
+  const tavilyResult = await performTavilySearch({
+    query: QUERY,
+    domains: DOMAINS,
+    max_results: MAX_RESULTS
+  });
+
+  const evidenceHelp = tavilyResult.results.map((item) => item.content).join('\n')
+
+  const systemMessages = [
+    { role: "system", content: getRequiredEvidencesPrompt(evidenceHelp) }
+  ];
+  const userMessage = [{ role: "user", content: disputeDetailsPrompt(transactionDetails) }];
+  const messages = [...systemMessages, ...userMessage];
+
+  const response = await openai.invoke(messages);
+
+  console.log("Response from OpenAI 3:", response.content);
+  
+  return response; 
+
+};
+
+
+export const generateDisputeResponseBusiness = async (transactionDetails:DisputeInfoType,disputeType:string,productCategory:string,evidencesNeeded:string[],evidenceAvailable:string[]) => {
+
+  const systemMessages = [
+    { role: "system", content: BusinessResponsePrompt }
+  ];
+
+  const userMessage = [{ role: "user", content: disputeDetailsPromptEnhanced(transactionDetails,disputeType,productCategory,evidencesNeeded,evidenceAvailable) }];
+
+  const messages = [...systemMessages, ...userMessage];
+
+  const response = await openai.invoke(messages);
+
+  
+  return response; 
+
+}
+
+export const generateDisputeResponsePaymentCompany =  async (transactionDetails:DisputeInfoType,disputeType:string,productCategory:string,evidencesNeeded:string[],evidenceAvailable:string[]) => {
+  
+
+  const systemMessages = [
+    { role: "system", content: paymentCompanyResponsePrompt }
+  ];
+
+  const userMessage = [{ role: "user", content: disputeDetailsPromptEnhanced(transactionDetails,disputeType,productCategory,evidencesNeeded,evidenceAvailable) }];
+
+  const messages = [...systemMessages, ...userMessage];
+
+  const response = await openai.invoke(messages);
+  
+  return response; 
+};

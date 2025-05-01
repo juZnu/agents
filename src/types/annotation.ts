@@ -7,7 +7,15 @@ export const StripeDisputeAnnotation = Annotation.Root({
   customer: Annotation<StripeCustomerType>(),
   charge: Annotation<StripeChargeType>(),
   business: Annotation<BusinessType>(),
-  productCategory: Annotation<string>(),
-  evidenceRequired: Annotation<string>(),
+  collectedEvidences:Annotation<string[]>(),
+  missingEvidences:Annotation<string[]>(),
+  invoice:Annotation<string>(),
+  termsConditions: Annotation<String>(),
+  policy:Annotation<string>(),
+  businessResponse: Annotation<string>(),
+  paymentCompanyResponse:Annotation<string>(),
+
+
+
 })
 

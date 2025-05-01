@@ -1,17 +1,26 @@
-import { StateGraph, START, END } from '@langchain/langgraph'
-import { classifyDisputeAndProductNode, disputeResponseCustomerNode, disputeResponsePaymentCompanyNode} from '../nodes';
+import { StateGraph, START, END } from '@langchain/langgraph';
 import { StripeDisputeAnnotation } from '../types/annotation';
+import {
+  classifyDisputeAndProductNode,
+  getEvidencesNode,
+  resolveDocumentsNode,
+
+  getResponseBusinessNode,
+  getResponsePaymentCompanyNode
+} from '../nodes';
 
 
 export const stripeWorkflow = new StateGraph(StripeDisputeAnnotation)
-  // Add nodes
   .addNode("classifyDisputeAndProduct", classifyDisputeAndProductNode)
-  .addNode("disputeResponseCustomer", disputeResponseCustomerNode)
-  .addNode("disputeResponsePaymentCompany", disputeResponsePaymentCompanyNode)
+  .addNode('getEvidences', getEvidencesNode)
+  .addNode("resolveDocuments", resolveDocumentsNode)
+  .addNode("getBusinessResponse", getResponseBusinessNode)
+  .addNode("getPaymentCompanyResponse", getResponsePaymentCompanyNode)
 
-  // Add edges
-  .addEdge(START, "classifyDisputeAndProduct") 
-  .addEdge("classifyDisputeAndProduct", "disputeResponseCustomer") 
-  .addEdge("classifyDisputeAndProduct", "disputeResponsePaymentCompany")
-  .addEdge("disputeResponseCustomer", END) 
-  .addEdge("disputeResponsePaymentCompany", END); 
+  .addEdge(START, 'classifyDisputeAndProduct')
+  .addEdge('classifyDisputeAndProduct', 'getEvidences')
+  .addEdge('getEvidences', 'resolveDocuments')
+  .addEdge('resolveDocuments', 'getBusinessResponse')
+  .addEdge('resolveDocuments', 'getPaymentCompanyResponse')
+  .addEdge('getBusinessResponse', END)
+  .addEdge('getPaymentCompanyResponse', END);
