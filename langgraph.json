@@ -3,7 +3,7 @@
   "dockerfile_lines": [],
   "dependencies": ["."],
   "graphs": {
-    "reasoning_agent": "./src/index.ts:graph"
+    "reasoning_agent": "./src/index.ts:stripe_graph"
   },
   "env": "../.env"
 }

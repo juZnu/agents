@@ -1,5 +1,6 @@
 import { stripeWorkflow } from "./graphs";
 
-export const graph = stripeWorkflow.compile({
+export const stripe_graph = stripeWorkflow.compile({
 
 });
+ 
