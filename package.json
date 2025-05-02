@@ -18,6 +18,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "@fluvio/client": "^0.14.9",
     "@langchain/anthropic": "^0.3.17",
     "@langchain/core": "^0.3.44",
     "@langchain/google-genai": "^0.2.3",

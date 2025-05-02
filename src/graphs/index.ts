@@ -4,7 +4,6 @@ import {
   classifyDisputeAndProductNode,
   getEvidencesNode,
   resolveDocumentsNode,
-
   getResponseBusinessNode,
   getResponsePaymentCompanyNode
 } from '../nodes';
