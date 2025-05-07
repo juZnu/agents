@@ -7,8 +7,6 @@ import { getDisputeDetails, sleep } from "../utils";
 import { invoiceTool, refundPolicyTool, termsTool } from "../Tools/functions";
 import { storeBusinessPolicyVector, storeEvidenceTextVector } from "../models/vector";
 
-
-
 export const classifyDisputeAndProductNode = async (state: typeof StripeDisputeAnnotation.State) => {
   const { customer, business, charge, messages } = state;
 
@@ -151,14 +149,13 @@ export const getResponseBusinessNode = async (state: typeof StripeDisputeAnnotat
   
   const evidenceAvailable : string[] = collectedEvidences
   console.log(evidenceAvailable,evidencesNeeded)
-  const response = await generateDisputeResponseBusiness(disputeDetails,disputeType,productCategory,evidencesNeeded,evidenceAvailable)
-  messages.push(response);
+  const response = await generateDisputeResponseBusiness(customer,business,charge,disputeType,productCategory,evidencesNeeded,evidenceAvailable)
   
   await sleep(10000);
   return new Command({
     update: {
       messages: [...messages], 
-      businessResponse:response.content.toString(),
+      businessResponse:response.toString(),
 
     },
   });

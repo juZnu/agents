@@ -1,5 +1,5 @@
 
-import { DisputeInfoType } from "../types/types";
+import { BusinessType, DisputeInfoType, StripeChargeType, StripeCustomerType } from "../types/types";
 
 import { openai } from "../models";
 import {  
@@ -10,7 +10,8 @@ import {
   requiredEvidencePrompt, 
   paymentCompanyResponsePrompt, 
   getRequiredEvidencesPrompt,
-  disputeDetailsPromptEnhanced} from "../utils/prompts";
+  disputeDetailsPromptEnhanced,
+  formatBusinessResponse} from "../utils/prompts";
 
 import { performTavilySearch } from "../models/Tavily";
 
@@ -108,17 +109,21 @@ export const generateEvidences = async (transactionDetails: DisputeInfoType, car
 };
 
 
-export const generateDisputeResponseBusiness = async (transactionDetails:DisputeInfoType,disputeType:string,productCategory:string,evidencesNeeded:string[],evidenceAvailable:string[]) => {
 
-  const systemMessages = [
-    { role: "system", content: BusinessResponsePrompt }
-  ];
 
-  const userMessage = [{ role: "user", content: disputeDetailsPromptEnhanced(transactionDetails,disputeType,productCategory,evidencesNeeded,evidenceAvailable) }];
+export const generateDisputeResponseBusiness = async (customer: StripeCustomerType,business: BusinessType,charge: StripeChargeType,disputeType: string,productCategory: string,evidencesNeeded: string[],evidenceAvailable: string[]) => {
 
-  const messages = [...systemMessages, ...userMessage];
-
-  const response = await openai.invoke(messages);
+  const response  = formatBusinessResponse( {
+    businessName: business.companyName || '',
+    disputerName: customer.name || '',
+    disputerEmail: customer.email || '',
+    amount: charge.amount || 0,
+    paymentMethod: charge.card_type || '',
+    cardDigits: charge.last4 || '',
+    disputeReason: disputeType,
+    productType: productCategory,
+    evidenceAvailable: evidenceAvailable || [],
+    evidencesNeeded: evidencesNeeded || [],})
 
   
   return response; 

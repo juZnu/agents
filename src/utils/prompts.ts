@@ -1,8 +1,6 @@
 import { DisputeInfoType } from "../types/types";
 import { chargebackReasons, productTypes } from "./variables";
 
-
-
 export const classifyDisputePrompt = `
 You are a dispute analyst.
 
@@ -127,6 +125,61 @@ export const requiredEvidencePrompt = (
         - **Required Evidence for This Case:**
           ${evidences}`;
 };
+
+export function formatBusinessResponse({
+  businessName,
+  disputerName,
+  disputerEmail,
+  amount,
+  paymentMethod,
+  cardDigits,
+  disputeReason,
+  productType,
+  evidenceAvailable,
+  evidencesNeeded
+}: {
+  businessName: string;
+  disputerName: string;
+  disputerEmail: string;
+  amount: number;
+  paymentMethod: string;
+  cardDigits: string;
+  disputeReason: string;
+  productType: string;
+  evidenceAvailable: string[];
+  evidencesNeeded: string[];
+}): string {
+  return `
+Hi ${businessName},
+
+This email concerns the dispute initiated by ${disputerName} for a transaction with the following details:
+
+- Customer: ${disputerName} - ${disputerEmail}
+- Transaction Amount: $${amount.toFixed(2)}
+- Payment Method: ${paymentMethod} (Card ending in: ${cardDigits})
+- Reason for Dispute: ${disputeReason}
+- Product/Service: ${productType}
+
+Based on the dispute details, here is the evidence we currently have:
+
+Existing Evidence:
+${evidenceAvailable.length > 0 ? evidenceAvailable.map(e => `- ${e}`).join('\n') : '- None provided'}
+
+Potential Supporting Evidence:
+To further strengthen your case, consider providing any of the following, if available:
+
+${evidencesNeeded.length > 0 ? evidencesNeeded.map(e => `- ${e}`).join('\n') : '- None required'}
+
+Providing any of the above can increase the likelihood of a favorable outcome for this dispute.
+
+We will proceed with the evidence currently available. Please let us know if you have any questions or if you can provide any of the potential supporting evidence listed above.
+
+Thank you for your prompt attention to this matter.
+
+Best regards,  
+Safe Service Team
+  `.trim();
+}
 
 export const BusinessResponsePrompt = `
 You are a customer service agent assisting with chargeback dispute investigations. Your objective is to draft a clear and concise response to the business regarding a customer dispute.

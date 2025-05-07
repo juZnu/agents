@@ -20,7 +20,7 @@ export const invoiceTool = new DynamicStructuredTool({
     - Charge Date: ${chargeDate}
     - Items: ${items.join(", ")}
     - Status: ${status}`;
-    return await generatePDF(content, `invoice-summary-${Date.now()}.pdf`);
+    return content;
   },
 
 });
@@ -61,7 +61,7 @@ Summarize the refund policy specific to this case.`,
       },
     ]);
 
-    return await generatePDF(llmResponse?.content.toString(), `refund-policy-${Date.now()}.pdf`);
+    return llmResponse?.content.toString();
   },
 });
 
@@ -101,6 +101,6 @@ Summarize the relevant terms and conditions.`,
       },
     ]);
 
-    return await generatePDF(llmResponse.content.toString(), `terms-and-conditions-${Date.now()}.pdf`);
+    return llmResponse.content.toString();
   },
 });
