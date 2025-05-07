@@ -3,7 +3,7 @@ import { generateCategoryType, generateDisputeResponseBusiness, generateDisputeR
 import { DisputeInfoType } from "../types/types";
 import { Command } from "@langchain/langgraph";
 import { StripeDisputeAnnotation } from "../types/annotation";
-import { getDisputeDetails, sleep } from "../utils";
+import { getDisputeDetails } from "../utils";
 import { invoiceTool, refundPolicyTool, termsTool } from "../Tools/functions";
 import { storeBusinessPolicyVector, storeEvidenceTextVector } from "../models/vector";
 
@@ -18,7 +18,7 @@ export const classifyDisputeAndProductNode = async (state: typeof StripeDisputeA
 
   messages.push(productCategory);
 
-  await sleep(10000);
+
 
   return new Command({
     update: {
@@ -42,7 +42,7 @@ export const getEvidencesNode = async (state: typeof StripeDisputeAnnotation.Sta
   const evidences = await generateEvidences(disputeDetails,cardType,disputeType,productCategory)
   messages.push(evidences);
 
-  await sleep(10000); 
+
 
   return new Command({
     update: {
@@ -151,7 +151,7 @@ export const getResponseBusinessNode = async (state: typeof StripeDisputeAnnotat
   console.log(evidenceAvailable,evidencesNeeded)
   const response = await generateDisputeResponseBusiness(customer,business,charge,disputeType,productCategory,evidencesNeeded,evidenceAvailable)
   
-  await sleep(10000);
+
   return new Command({
     update: {
       messages: [...messages], 
@@ -176,7 +176,7 @@ export const getResponsePaymentCompanyNode = async (state: typeof StripeDisputeA
   const response = await generateDisputeResponsePaymentCompany(disputeDetails,disputeType,productCategory,evidencesNeeded,evidenceAvailable)
   messages.push(response);
   
-  await sleep(10000);
+
   return new Command({
     update: {
       messages: [...messages], 
