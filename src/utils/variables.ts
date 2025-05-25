@@ -4051,3 +4051,196 @@ export const disputeRequirements : DisputeRequirements ={
 }
 
 
+export const evidenceGuide = {
+  "credit_not_processed": {
+    "physical": [
+      ["refund_policy", "The merchant's formal policy regarding refunds for transactions."],
+      ["refund_policy_disclosure", "Evidence that the refund policy was shown or disclosed to the customer."],
+      ["refund_refusal_explanation", "A written explanation stating why a refund was denied."],
+      ["customer_communication", "Any messages or emails exchanged with the customer."],
+      ["uncategorized_text", "Relevant text evidence not categorized under a specific label."],
+      ["uncategorized_file", "Miscellaneous file uploads that support the merchant’s case."]
+    ],
+    "digital": [
+      ["cancellation_policy", "The business’s stated policy on cancellations for digital products/services."],
+      ["refund_policy", "The merchant's formal policy regarding refunds for transactions."],
+      ["cancellation_policy_disclosure", "Proof that the cancellation policy was communicated to the customer."],
+      ["refund_policy_disclosure", "Evidence that the refund policy was shown or disclosed to the customer."],
+      ["cancellation_rebuttal", "A statement or documentation disputing the validity of the cancellation."],
+      ["uncategorized_text", "Relevant text evidence not categorized under a specific label."],
+      ["uncategorized_file", "Miscellaneous file uploads that support the merchant’s case."],
+      ["customer_communication", "Any messages or emails exchanged with the customer."]
+    ],
+    "offline": [
+      ["cancellation_policy", "The business’s stated policy on cancellations for offline purchases."],
+      ["refund_policy", "The merchant's formal policy regarding refunds for transactions."],
+      ["cancellation_policy_disclosure", "Proof that the cancellation policy was communicated to the customer."],
+      ["refund_policy_disclosure", "Evidence that the refund policy was shown or disclosed to the customer."],
+      ["cancellation_rebuttal", "A statement or documentation disputing the validity of the cancellation."],
+      ["uncategorized_text", "Relevant text evidence not categorized under a specific label."],
+      ["uncategorized_file", "Miscellaneous file uploads that support the merchant’s case."],
+      ["customer_communication", "Any messages or emails exchanged with the customer."]
+    ]
+  },
+  "fraudulent": {
+    "physical": [
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""],
+      ["customer_signature", ""],
+      ["shipping_address", ""],
+      ["shipping_documentation", ""],
+      ["shipping_date", ""],
+      ["shipping_carrier", ""],
+      ["shipping_tracking_number", ""]
+    ],
+    "digital": [
+      ["customer_purchase_ip", ""],
+      ["customer_name", ""],
+      ["customer_email_address", ""],
+      ["access_activity_log", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""],
+      ["service_date", ""],
+      ["service_documentation", ""]
+    ],
+    "offline": [
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""],
+      ["customer_signature", ""]
+    ]
+  },
+  "product_unacceptable": {
+    "physical": [
+      ["product_description", ""],
+      ["uncategorized_file", ""],
+      ["customer_communication", ""],
+      ["refund_policy", ""],
+      ["refund_policy_disclosure", ""],
+      ["uncategorized_text", ""]
+    ],
+    "digital": [
+      ["product_description", ""],
+      ["uncategorized_file", ""],
+      ["access_activity_log", ""],
+      ["refund_policy", ""],
+      ["refund_policy_disclosure", ""],
+      ["uncategorized_text", ""]
+    ],
+    "offline": [
+      ["product_description", ""],
+      ["uncategorized_file", ""],
+      ["refund_policy", ""],
+      ["refund_policy_disclosure", ""],
+      ["uncategorized_text", ""]
+    ]
+  },
+  "duplicate_charge": {
+    "physical": [
+      ["duplicate_charge_id", ""],
+      ["duplicate_charge_explanation", ""],
+      ["duplicate_charge_documentation", ""],
+      ["shipping_documentation", ""],
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""]
+    ],
+    "digital": [
+      ["duplicate_charge_id", ""],
+      ["duplicate_charge_explanation", ""],
+      ["duplicate_charge_documentation", ""],
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""]
+    ],
+    "offline": [
+      ["duplicate_charge_id", ""],
+      ["duplicate_charge_explanation", ""],
+      ["duplicate_charge_documentation", ""],
+      ["service_documentation", ""],
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""]
+    ]
+  },
+  "product_not_received": {
+    "physical": [
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""],
+      ["shipping_address", ""],
+      ["shipping_documentation", ""],
+      ["shipping_date", ""],
+      ["shipping_carrier", ""],
+      ["shipping_tracking_number", ""]
+    ],
+    "digital": [
+      ["customer_purchase_ip", ""],
+      ["customer_name", ""],
+      ["customer_email_address", ""],
+      ["access_activity_log", ""],
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""]
+    ],
+    "offline": [
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""],
+      ["customer_signature", ""],
+      ["service_date", ""],
+      ["service_documentation", ""]
+    ]
+  },
+  "subscription_canceled": {
+    "physical": [
+      ["cancellation_policy", ""],
+      ["cancellation_policy_disclosure", ""],
+      ["cancellation_rebuttal", ""]
+    ],
+    "digital": [
+      ["cancellation_policy", ""],
+      ["cancellation_policy_disclosure", ""],
+      ["cancellation_rebuttal", ""]
+    ],
+    "offline": [
+      ["cancellation_policy", ""],
+      ["cancellation_policy_disclosure", ""],
+      ["cancellation_rebuttal", ""]
+    ]
+  },
+  "unrecognized": {
+    "physical": [
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""],
+      ["shipping_address", ""],
+      ["shipping_documentation", ""],
+      ["shipping_date", ""],
+      ["shipping_carrier", ""],
+      ["shipping_tracking_number", ""]
+    ],
+    "digital": [
+      ["customer_purchase_ip", ""],
+      ["customer_name", ""],
+      ["customer_email_address", ""],
+      ["access_activity_log", ""],
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""]
+    ],
+    "offline": [
+      ["customer_communication", ""],
+      ["uncategorized_text", ""],
+      ["uncategorized_file", ""],
+      ["customer_signature", ""],
+      ["service_date", ""],
+      ["service_documentation", ""]
+    ]
+  }
+};
+
+
+
+

@@ -1,10 +1,12 @@
 
 import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { refundPolicyTool, termsTool } from "./functions";
+import { receiptTool } from "./receiptTool";
+import { refundPolicyTool } from "./refundPolicyTool";
+
 
 
 export const toolNode = new ToolNode([
+  receiptTool,
   refundPolicyTool,
-  termsTool,
 ]);
 

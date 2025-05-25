@@ -126,60 +126,6 @@ export const requiredEvidencePrompt = (
           ${evidences}`;
 };
 
-export function formatBusinessResponse({
-  businessName,
-  disputerName,
-  disputerEmail,
-  amount,
-  paymentMethod,
-  cardDigits,
-  disputeReason,
-  productType,
-  evidenceAvailable,
-  evidencesNeeded
-}: {
-  businessName: string;
-  disputerName: string;
-  disputerEmail: string;
-  amount: number;
-  paymentMethod: string;
-  cardDigits: string;
-  disputeReason: string;
-  productType: string;
-  evidenceAvailable: string[];
-  evidencesNeeded: string[];
-}): string {
-  return `
-Hi ${businessName},
-
-This email concerns the dispute initiated by ${disputerName} for a transaction with the following details:
-
-- Customer: ${disputerName} - ${disputerEmail}
-- Transaction Amount: $${amount.toFixed(2)}
-- Payment Method: ${paymentMethod} (Card ending in: ${cardDigits})
-- Reason for Dispute: ${disputeReason}
-- Product/Service: ${productType}
-
-Based on the dispute details, here is the evidence we currently have:
-
-Existing Evidence:
-${evidenceAvailable.length > 0 ? evidenceAvailable.map(e => `- ${e}`).join('\n') : '- None provided'}
-
-Potential Supporting Evidence:
-To further strengthen your case, consider providing any of the following, if available:
-
-${evidencesNeeded.length > 0 ? evidencesNeeded.map(e => `- ${e}`).join('\n') : '- None required'}
-
-Providing any of the above can increase the likelihood of a favorable outcome for this dispute.
-
-We will proceed with the evidence currently available. Please let us know if you have any questions or if you can provide any of the potential supporting evidence listed above.
-
-Thank you for your prompt attention to this matter.
-
-Best regards,  
-Safe Service Team
-  `.trim();
-}
 
 export const BusinessResponsePrompt = `
 You are a customer service agent assisting with chargeback dispute investigations. Your objective is to draft a clear and concise response to the business regarding a customer dispute.
@@ -245,4 +191,69 @@ Best regards,
 Safe Service Team
 `;
 
+export function formatBusinessResponse({
+  businessName,
+  disputerName,
+  disputerEmail,
+  amount,
+  paymentMethod,
+  cardDigits,
+  disputeReason,
+  productType,
+  evidenceAvailable,
+  evidencesNeeded
+}: {
+  businessName: string;
+  disputerName: string;
+  disputerEmail: string;
+  amount: number;
+  paymentMethod: string;
+  cardDigits: string;
+  disputeReason: string;
+  productType: string;
+  evidenceAvailable: string[];
+  evidencesNeeded: string[];
+}): string {
+  return `
+Hi ${businessName},
 
+We’ve gathered the following information regarding an open chargeback dispute that needs your attention:
+
+Customer Details
+* Email: ${disputerEmail}
+* Name / Phone Number: ${disputerName || 'Not provided'}
+
+Dispute Summary
+* Amount: $${(amount / 100).toFixed(2)} USD
+* Payment Method: ${paymentMethod} ending in ${cardDigits}
+* Reason: ${disputeReason}
+* Product Type: ${productType}
+
+Evidence Collected So Far
+${evidenceAvailable.length > 0 ? evidenceAvailable.map((e, i) => `${i + 1}. ${e}`).join('\n') : '1. None'}
+
+Missing Evidence That Could Strengthen the Case
+${evidencesNeeded.length > 0 ? evidencesNeeded.map((e, i) => `${i + 1}. ${e}`).join('\n') : 'None'}
+
+Next Steps
+Since this dispute is categorized as ${disputeReason.toLowerCase()} and the product is ${productType.toLowerCase()}, Stripe recommends submitting compelling evidence to prove that:
+* The cardholder authorized the transaction.
+* The product or service was provided, accessed, or used by the cardholder.
+* Any supporting logs or records (e.g. IP addresses, login timestamps, user activity) are available.
+
+To help strengthen our response, could you please confirm the following:
+1. Do you have any customer communications (emails, messages, support tickets)?
+2. Do you have logs or records showing the customer accessed or used the digital service?
+
+Final submission deadline: [Insert Deadline Here]
+• That gives us [X] days to respond.
+• We plan to submit the dispute response one day before expiration using the evidence we’ve collected.
+
+Even if this information isn’t available, we will proceed and submit the evidence we currently have.
+
+Let us know if you’re able to send any additional documents or insights.
+
+Thanks,
+Safe App Disputes Team
+  `.trim();
+}

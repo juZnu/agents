@@ -17,14 +17,17 @@ export type StripeChargeType = {
   card_type?: string;
   connection_id?: string;
   customer?: string | null;
-  date_created?: string; // Date as a string (you can parse it to Date type if needed)
+  date_created?: string; 
   id?: string;
   last4?: string;
   location?: string;
+  receipt_url?: string;
   provider_id?: string | null;
   user_id?: string;
   workspace_id?: string | null;
-  disputeType?: string; // Added disputeType to the charge type
+  disputeType?: string; 
+  productType?: string;
+  duedata?: string;
 };
 
 

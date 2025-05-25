@@ -1,188 +1,178 @@
 
-import { generateCategoryType, generateDisputeResponseBusiness, generateDisputeResponsePaymentCompany, generateDisputeType, generateEvidences } from "../actions";
+import { generateBusinessResponseWithAI, generateDisputeResponsePaymentCompany } from "../actions";
 import { DisputeInfoType } from "../types/types";
 import { Command } from "@langchain/langgraph";
 import { StripeDisputeAnnotation } from "../types/annotation";
 import { getDisputeDetails } from "../utils";
-import { invoiceTool, refundPolicyTool, termsTool } from "../Tools/functions";
-import { storeBusinessPolicyVector, storeEvidenceTextVector } from "../models/vector";
+import { evidenceGuide } from "../utils/variables";
+import { toolNode } from "../Tools";
 
-export const classifyDisputeAndProductNode = async (state: typeof StripeDisputeAnnotation.State) => {
-  const { customer, business, charge, messages } = state;
+// export const classifyDisputeAndProductNode = async (state: typeof StripeDisputeAnnotation.State) => {
+//   const { customer, business, charge, messages } = state;
 
-  const disputeDetails: DisputeInfoType = getDisputeDetails(customer, business, charge);
+//   const disputeDetails: DisputeInfoType = getDisputeDetails(customer, business, charge);
   
-  const [productCategory] = await Promise.all([
-    generateCategoryType(disputeDetails),
-  ]);
+//   const [productCategory] = await Promise.all([
+//     generateCategoryType(disputeDetails),
+//   ]);
 
-  messages.push(productCategory);
+//   messages.push(productCategory);
 
 
 
-  return new Command({
-    update: {
-      messages: [...messages],  
-    },
-  });
-};
+//   return new Command({
+//     update: {
+//       messages: [...messages],  
+//     },
+//   });
+// };
 
 export const getEvidencesNode = async (state: typeof StripeDisputeAnnotation.State) => {
-  const { customer, business, charge, messages } = state;
-  const disputeDetails: DisputeInfoType = getDisputeDetails(customer, business, charge);
-
+  const { charge, messages } = state;
+  
   const disputeType = charge.disputeType?.toString().trim() || '';
-  const productCategory = messages[messages.length - 1].content.toString().trim(); 
+  const productCategory = charge.productType?.toString().trim() || '';
   const cardType = charge.card_type?.toString().trim() || ''
 
-  console.log('Dispute Type:', disputeType);
-  console.log('Product Category:', productCategory);
-  console.log('Card Type : ', charge.card_type?.toString().trim())
+  let evidenceList = evidenceGuide[disputeType]?.[productCategory] || [];
 
-  const evidences = await generateEvidences(disputeDetails,cardType,disputeType,productCategory)
-  messages.push(evidences);
-
-
+  if (charge.receipt_url !== null && charge.receipt_url !== '') {
+    evidenceList.push(['receipt','']);
+  }
 
   return new Command({
     update: {
-      messages: [...messages], 
+      evidenceList: evidenceList,
     },
+
   });
 };
 
+
 export const resolveDocumentsNode = async (state: typeof StripeDisputeAnnotation.State) => {
-  const { business, messages, charge } = state;
-  const cardType = charge.card_type?.toString().trim() || '';
+  const evidenceList: [string, string][] = state.evidenceList || [];
 
-  const disputeType = charge.disputeType?.toString().trim() || '';
-  const productCategory = messages[messages.length - 2]?.content?.toString().trim() || '';
+  const collectedEvidences: Record<string, string> = {};
+  const missingEvidences: Record<string, string> = {};
 
-  const evidences = messages[messages.length - 1].content
-    .toString()
-    .trim()
-    .split(/,(?![^()]*\))/)
-    .map((e) => e.trim().toLowerCase());
+  // Extract tools from ToolNode
+  const receiptTool = toolNode.tools.find((t) => t.name === "receipt");
+  const refundPolicyTool = toolNode.tools.find((t) => t.name === "refund_policy");
 
-  const evidenceText = `Evidences required for:\n- Dispute Type: ${disputeType}\n- Product Type: ${productCategory}\n- Card Type: ${cardType}\nList: ${evidences.join(", ")}`;
-  
-  await storeEvidenceTextVector("evidence_templates", evidenceText, {
-    disputeType,
-    productType: productCategory,
-    cardType,
-    evidences,
-  });
+  for (const [code, code_desc] of evidenceList) {
+    try {
+      let result = "";
 
-
-  const businessName = business.companyName || '';
-  const businessUrl = business.websiteUrl || '';
-
-  const outputs: Record<string, string> = {};
-  const collectedEvidences: string[] = [];
-  const missingEvidences: string[] = [];
-
-  for (const item of evidences) {
-    const normalized = item.toLowerCase();
-    let matched = false;
-
-    if (/\brefund\b/.test(normalized)) {
-      const refund = await refundPolicyTool.func({
-        businessName, businessUrl,
-        disputeReason: ""
-      });
-      outputs["refund-policy"] = refund;
-
-      await storeBusinessPolicyVector("policy", businessName, disputeType, refund);
-
-      collectedEvidences.push("Refund Policy");
-      matched = true;
-    }
-
-    if (/\bterms\b/.test(normalized)) {
-      const terms = await termsTool.func({
-        businessName, businessUrl,
-        disputeReason: ""
-      });
-      outputs["terms-and-conditions"] = terms;
-
-      await storeBusinessPolicyVector("terms", businessName, disputeType, terms);
-
-      collectedEvidences.push("Terms & Conditions");
-      matched = true;
-    }
-
-    if (/\bcontract\b|\binvoice\b/.test(normalized)) {
-      const invoice = await invoiceTool.func({
-        status: '',
-        amount: Number(charge.amount) ?? 0,
-        items: [],
-        chargeDate: ""
-      });
-      outputs["invoice-info"] = invoice;
-      collectedEvidences.push("Invoice Details");
-      matched = true;
-    }
-
-    if (!matched) {
-      missingEvidences.push(item);
+      switch (code) {
+        case "receipt": {
+          if (
+            !receiptTool ||
+            typeof (receiptTool as any).prepareInput !== "function" ||
+            typeof receiptTool.invoke !== "function"
+          ) {
+            missingEvidences[code] = code_desc || "Tool missing or not invokable";
+            continue;
+          }
+          const input = (receiptTool as any).prepareInput(state);
+          result = await receiptTool.invoke(input);
+          break;
+        }
+      
+        case "refund_policy": {
+          if (
+            !refundPolicyTool ||
+            typeof (refundPolicyTool as any).prepareInput !== "function" ||
+            typeof refundPolicyTool.invoke !== "function"
+          ) {
+            missingEvidences[code] = code_desc || "Tool missing or not invokable";
+            continue;
+          }
+          const input = (refundPolicyTool as any).prepareInput(state);
+          result = await refundPolicyTool.invoke(input); 
+          break;
+        }
+      
+        default:
+          missingEvidences[code] = code_desc || "Unknown evidence type";
+          continue;
+      }
+      
+      collectedEvidences[code] = result;
+    } catch (err: any) {
+      missingEvidences[code] = code_desc || err?.message || "Unknown error";
     }
   }
 
-  return {
-    ...state,
-    toolDocuments: outputs,
-    collectedEvidences: [...new Set(collectedEvidences)],
-    missingEvidences,
-    invoice: outputs["invoice-info"] || '',
-    termsConditions: outputs["terms-and-conditions"] || '',
-    policy: outputs["refund-policy"] || '',
-  };
+  console.log("Collected Evidences:", collectedEvidences);
+  console.log("Missing Evidences:", missingEvidences);
+
+  return new Command({
+    update: {
+      collectedEvidences,
+      missingEvidences,
+    },
+  });
 };
 
+
 export const getResponseBusinessNode = async (state: typeof StripeDisputeAnnotation.State) => {
-  const { customer, business, charge, messages, collectedEvidences, missingEvidences} = state;
-  const disputeDetails: DisputeInfoType = getDisputeDetails(customer, business, charge);
+  const { customer, business, charge, messages, collectedEvidences, missingEvidences } = state;
 
   const disputeType = charge.disputeType?.toString().trim() || ''; 
-  const productCategory = messages[messages.length - 2].content.toString().trim(); 
-  const evidencesNeeded = missingEvidences
-  
-  const evidenceAvailable : string[] = collectedEvidences
-  console.log(evidenceAvailable,evidencesNeeded)
-  const response = await generateDisputeResponseBusiness(customer,business,charge,disputeType,productCategory,evidencesNeeded,evidenceAvailable)
-  
+  const productCategory = charge.productType?.toString().trim() || '';
+
+  const evidenceAvailable: string[] = collectedEvidences
+    ? Object.entries(collectedEvidences).map(([key, value]) => `${key.replace(/_/g, ' ')}: ${value}`)
+    : [];
+
+  const evidencesNeeded: string[] = missingEvidences
+    ? Object.entries(missingEvidences).map(([key, desc]) => `${key.replace(/_/g, ' ')}: ${desc}`)
+    : [];
+
+  const aiResponse = await generateBusinessResponseWithAI({
+    customer,
+    business,
+    charge,
+    disputeType,
+    productCategory,
+    evidenceAvailable,
+    evidencesNeeded
+  });
 
   return new Command({
     update: {
-      messages: [...messages], 
-      businessResponse:response.toString(),
-
+      messages: [...messages],
+      businessResponse: aiResponse,
     },
   });
-  
-}
+};
 
 export const getResponsePaymentCompanyNode = async (state: typeof StripeDisputeAnnotation.State) => {
-  
-  const { customer, business, charge, messages, collectedEvidences, missingEvidences} = state;
-  const disputeDetails: DisputeInfoType = getDisputeDetails(customer, business, charge);
+  const { customer, business, charge, messages, collectedEvidences, missingEvidences } = state;
 
+  const disputeDetails: DisputeInfoType = getDisputeDetails(customer, business, charge);
   const disputeType = charge.disputeType?.toString().trim() || ''; 
-  const productCategory = messages[messages.length - 2].content.toString().trim(); 
-  const evidencesNeeded = missingEvidences
-  
-  const evidenceAvailable : string[] = collectedEvidences
-  console.log(evidenceAvailable,evidencesNeeded)
-  const response = await generateDisputeResponsePaymentCompany(disputeDetails,disputeType,productCategory,evidencesNeeded,evidenceAvailable)
+  const productCategory = charge.productType?.toString().trim() || '';
+
+  const evidencesNeeded = Object.entries(missingEvidences || {}).map(([key, desc]) => `${key.replace(/_/g, ' ')}: ${desc}`);
+  const evidenceAvailable: string[] = collectedEvidences
+    ? Object.entries(collectedEvidences).map(([key, value]) => `${key.replace(/_/g, ' ')}: ${value}`)
+    : [];
+
+  const response = await generateDisputeResponsePaymentCompany(
+    disputeDetails,
+    disputeType,
+    productCategory,
+    evidencesNeeded,
+    evidenceAvailable
+  );
+
   messages.push(response);
-  
 
   return new Command({
     update: {
-      messages: [...messages], 
-    paymentCompanyResponse:response.content.toString(),
+      messages: [...messages],
+      paymentCompanyResponse: response.content.toString(),
     },
-
   });
-}
-
+};
