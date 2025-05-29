@@ -159,7 +159,7 @@ export const generateBusinessResponseWithAI = async ({
   Include:
   - Customer name: ${customer.name || 'N/A'}
   - Email: ${customer.email || 'N/A'}
-  - Amount: $${(charge.amount || 0) / 100}
+  - Amount: $${(charge.amount || 0)}
   - Card Type: ${charge.card_type || 'N/A'} ending in ${charge.last4 || 'XXXX'}
   - Reason: ${disputeType}
   - Product Type: ${productCategory}
