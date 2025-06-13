@@ -1,6 +1,6 @@
 node_modules
 dist
 .env
-pnpm-lock.yaml
 tests
 logs/
+pnpm-lock.yaml
