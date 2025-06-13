@@ -2,6 +2,7 @@ import { z } from "zod";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { performTavilySearch } from "../models/Tavily";
 import { openai } from "../models";
+import { readFile } from "fs/promises";
 
 export const refundPolicyTool = Object.assign(
   new DynamicStructuredTool({
@@ -32,10 +33,12 @@ export const refundPolicyTool = Object.assign(
         return `No refund policy found on ${businessUrl}`;
       }
 
+      const systemPrompt = await readFile('prompts/PromptRefundPolicy.md', "utf-8");
+
       const summaryResponse = await openai.invoke([
         {
           role: "system",
-          content: `You are a policy analyst assistant. Using the provided refund policy content, generate a concise 2–5 sentence summary that reflects the policy in clear, structured legal-style language. Do not use customer-facing tone or conversational phrases. Format the output like a policy clause.`,
+          content: systemPrompt,
         },
         {
           role: "user",
@@ -62,3 +65,14 @@ Summarize the business's refund policy based on the above.`,
     }),
   }
 );
+
+/**!SECTION
+ * Previous Prompt
+ * 
+ * 
+ * 
+ * You are a policy analyst assistant. Using the provided refund policy content, generate a 
+ * concise 2–5 sentence summary that reflects the policy in clear, structured legal-style 
+ * language. Do not use customer-facing tone or conversational phrases. Format the output 
+ * like a policy clause.
+ */
